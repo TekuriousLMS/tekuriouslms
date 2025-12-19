@@ -4,11 +4,211 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+////////////////////////////
+// USER & ACCESS CONTROL
+////////////////////////////
+
+model User {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  email      String   @unique
+  phone      String?
+  createdAt  DateTime @default(now())
+
+  roles       UserRole[]
+  enrollments Enrollment[]
+  attempts    Attempt[]
+  analytics   StudentAnalytics?
+  rankings    Ranking[]
+
+  coursesCreated Course[] @relation("CourseCreator")
+}
+
+model Role {
+  id       String @id @default(uuid()) @db.Uuid
+  roleName String
+
+  users    UserRole[]
+}
+
+model UserRole {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  roleId String @db.Uuid
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+}
+
+////////////////////////////
+// ACADEMIC STRUCTURE
+////////////////////////////
+
+model Board {
+  id      String @id @default(uuid()) @db.Uuid
+  name    String
+
+  schools School[]
+}
+
+model School {
+  id        String @id @default(uuid()) @db.Uuid
+  name      String
+
+  boardId   String @db.Uuid
+  board     Board  @relation(fields: [boardId], references: [id])
+
+  classes       Class[]
+  subscriptions Subscription[]
+}
+
+model Class {
+  id        String @id @default(uuid()) @db.Uuid
+  name      String
+
+  schoolId  String @db.Uuid
+  school    School @relation(fields: [schoolId], references: [id])
+
+  subjects  Subject[]
+}
+
+model Subject {
+  id        String @id @default(uuid()) @db.Uuid
+  name      String
+
+  classId   String @db.Uuid
+  class     Class  @relation(fields: [classId], references: [id])
+
+  chapters  Chapter[]
+  courses   Course[]
+}
+
+model Chapter {
+  id        String @id @default(uuid()) @db.Uuid
+  name      String
+
+  subjectId String @db.Uuid
+  subject   Subject @relation(fields: [subjectId], references: [id])
+
+  topics    Topic[]
+}
+
+model Topic {
+  id        String @id @default(uuid()) @db.Uuid
+  name      String
+
+  chapterId String @db.Uuid
+  chapter   Chapter @relation(fields: [chapterId], references: [id])
+}
+
+////////////////////////////
+// LMS CORE
+////////////////////////////
+
+model Course {
+  id          String @id @default(uuid()) @db.Uuid
+  title       String
+
+  subjectId   String @db.Uuid
+  subject     Subject @relation(fields: [subjectId], references: [id])
+
+  createdById String @db.Uuid
+  createdBy   User   @relation("CourseCreator", fields: [createdById], references: [id])
+
+  enrollments Enrollment[]
+  assessments Assessment[]
+}
+
+model Enrollment {
+  id        String @id @default(uuid()) @db.Uuid
+  progress  Float
+  status    String
+
+  userId    String @db.Uuid
+  user      User   @relation(fields: [userId], references: [id])
+
+  courseId  String @db.Uuid
+  course    Course @relation(fields: [courseId], references: [id])
+}
+
+////////////////////////////
+// ASSESSMENTS
+////////////////////////////
+
+model Assessment {
+  id         String @id @default(uuid()) @db.Uuid
+  title      String
+  totalMarks Int
+
+  courseId   String @db.Uuid
+  course     Course @relation(fields: [courseId], references: [id])
+
+  attempts   Attempt[]
+}
+
+model Attempt {
+  id            String @id @default(uuid()) @db.Uuid
+  score         Int
+
+  assessmentId  String @db.Uuid
+  assessment    Assessment @relation(fields: [assessmentId], references: [id])
+
+  userId        String @db.Uuid
+  user          User @relation(fields: [userId], references: [id])
+}
+
+////////////////////////////
+// ANALYTICS & RANKING
+////////////////////////////
+
+model StudentAnalytics {
+  id         String @id @default(uuid()) @db.Uuid
+  avgScore   Float
+  weakTopics String
+
+  userId     String @unique @db.Uuid
+  user       User @relation(fields: [userId], references: [id])
+}
+
+model Ranking {
+  id      String @id @default(uuid()) @db.Uuid
+  scope   String
+  rank    Int
+
+  userId  String @db.Uuid
+  user    User @relation(fields: [userId], references: [id])
+}
+
+////////////////////////////
+// SUBSCRIPTION & PAYMENTS
+////////////////////////////
+
+model Subscription {
+  id        String @id @default(uuid()) @db.Uuid
+  planName  String
+  status    String
+
+  schoolId  String @db.Uuid
+  school    School @relation(fields: [schoolId], references: [id])
+
+  payments  Payment[]
+}
+
+model Payment {
+  id             String @id @default(uuid()) @db.Uuid
+  amount         Float
+  status         String
+
+  subscriptionId String @db.Uuid
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
 }
