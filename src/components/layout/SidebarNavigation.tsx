@@ -38,7 +38,7 @@ export function SidebarNavigation({ mobile, collapsed, toggleCollapse }: Sidebar
 
     // Get role-specific dashboard path
     const getDashboardPath = () => {
-        if (!currentRole) return "/dashboard";
+        if (!currentRole) return "/";
         const role = currentRole.toLowerCase();
         return `/${role}/dashboard`;
     };

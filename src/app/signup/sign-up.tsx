@@ -162,11 +162,30 @@ export default function SignUp() {
                                 return;
                             }
 
+                            // Validate password strength
+                            const strongPasswordRegex =
+                                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+                            if (!strongPasswordRegex.test(password)) {
+                                toast.error(
+                                    "Password must include uppercase and lowercase letters, a number, and a special character",
+                                );
+                                return;
+                            }
+                            let imageBase64 = "";
+                            if (image) {
+                                try {
+                                    imageBase64 = await convertImageToBase64(image);
+                                } catch (error) {
+                                    toast.error("Failed to process profile image. Please try again.");
+                                    return;
+                                }
+                            }
+
                             await signUp.email({
                                 email,
                                 password,
                                 name: `${firstName} ${lastName}`,
-                                image: image ? await convertImageToBase64(image) : "",
+                                image: imageBase64,
                                 callbackURL: "/dashboard",
                                 fetchOptions: {
                                     onResponse: () => {
