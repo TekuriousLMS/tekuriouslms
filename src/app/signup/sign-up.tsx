@@ -162,11 +162,21 @@ export default function SignUp() {
                                 return;
                             }
 
+                            let imageBase64 = "";
+                            if (image) {
+                                try {
+                                    imageBase64 = await convertImageToBase64(image);
+                                } catch (error) {
+                                    toast.error("Failed to process profile image. Please try again.");
+                                    return;
+                                }
+                            }
+
                             await signUp.email({
                                 email,
                                 password,
                                 name: `${firstName} ${lastName}`,
-                                image: image ? await convertImageToBase64(image) : "",
+                                image: imageBase64,
                                 callbackURL: "/dashboard",
                                 fetchOptions: {
                                     onResponse: () => {
